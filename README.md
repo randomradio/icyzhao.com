@@ -1,15 +1,14 @@
 # icyzhao.com
 
-This repo is the future source of truth for `icyzhao.com`.
+This repo is the source of truth for `icyzhao.com`.
 
-The live site is currently a lightweight Hugo/PaperMod blog. This repository starts from a clean planning layer instead of copying the live site blindly, so the content model, publishing flow, and navigation automation can be designed first.
+The live site is published by GitHub Pages from this repository. Content can be written as local Markdown or drafted in Notion and imported by the publishing workflow.
 
 ## Working Assumptions
 
-- Keep the current public site stable while this repo becomes the new publishing workspace.
 - Use Markdown in Git as the canonical published format.
 - Use Notion as a capture and drafting surface, not as the only long-term archive.
-- Prefer a small static-site pipeline first. Hugo remains the default because the live site already uses it, but the plan keeps the generator replaceable.
+- Prefer a small static-site pipeline that keeps the generator replaceable.
 - Automate subdomain navigation from DNS discovery plus a small local registry for human-readable metadata.
 
 ## Success Criteria
@@ -43,6 +42,22 @@ npm run publish:wechat
 
 This checks the optional WeChat Official Account channel. It only runs for publishable content that explicitly includes `wechat_mp`.
 
+## Notion Publishing
+
+Publishing database: [Publishing Queue](https://app.notion.com/p/3963f5fd592c81b79d6acbce33a702cc)
+
+The GitHub Actions workflow imports Notion rows where `Status` is `Ready`. Required fields are:
+
+- `Title`
+- `Slug`
+- `Status`
+- `Type`
+- `Language`
+- `Channels`
+- `Visibility`
+
+Set `Channels` to `site` for normal site publishing. Add `wechat_mp` and set `WeChat Publish` to checked only when the optional WeChat channel should run.
+
 ## Initial Repository Shape
 
 ```text
@@ -55,5 +70,5 @@ data/
 docs/
   planning docs for the site and workflow
 scripts/
-  future import and discovery scripts
+  import, discovery, build, and publishing scripts
 ```
