@@ -1,0 +1,19 @@
+.DS_Store
+
+# Hugo / static site output
+/public/
+/resources/_gen/
+/.hugo_build.lock
+
+# Node tooling, if we add import/discovery scripts later
+/node_modules/
+/.env
+/.env.*
+!.env.example
+
+# Build and cache directories
+/dist/
+/.cache/
+/.vercel/
+/.netlify/
+

@@ -1,0 +1,15 @@
+[
+  {
+    "name": "lab.icyzhao.com",
+    "title": "Lab",
+    "description": "Experiments and prototypes.",
+    "category": "experiments",
+    "visibility": "public",
+    "order": 20
+  },
+  {
+    "name": "admin.icyzhao.com",
+    "visibility": "hidden"
+  }
+]
+
