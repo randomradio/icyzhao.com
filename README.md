@@ -58,6 +58,8 @@ The GitHub Actions workflow imports Notion rows where `Status` is `Ready`. Requi
 
 Set `Channels` to `site` for normal site publishing. Add `wechat_mp` and set `WeChat Publish` to checked only when the optional WeChat channel should run.
 
+WeChat publishing is routed through a fixed-IP SSH publisher at `/home/ubuntu/icyzhao-wechat-publisher` on the publishing server. GitHub Actions uses `WECHAT_PUBLISHER_*` secrets to run that remote CLI, so official-account API calls originate from the server IP instead of GitHub-hosted runner IPs.
+
 ## Initial Repository Shape
 
 ```text

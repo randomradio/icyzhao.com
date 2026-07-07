@@ -107,6 +107,11 @@ jobs:
       SITE_BASE_URL: https://icyzhao.com
       WECHAT_MP_APP_ID: ${{ secrets.WECHAT_MP_APP_ID }}
       WECHAT_MP_APP_SECRET: ${{ secrets.WECHAT_MP_APP_SECRET }}
+      WECHAT_PUBLISHER_HOST: ${{ secrets.WECHAT_PUBLISHER_HOST }}
+      WECHAT_PUBLISHER_PORT: ${{ secrets.WECHAT_PUBLISHER_PORT }}
+      WECHAT_PUBLISHER_USER: ${{ secrets.WECHAT_PUBLISHER_USER }}
+      WECHAT_PUBLISHER_PATH: ${{ secrets.WECHAT_PUBLISHER_PATH }}
+      WECHAT_PUBLISHER_SSH_KEY: ${{ secrets.WECHAT_PUBLISHER_SSH_KEY }}
     steps:
       - name: Checkout latest main
         uses: actions/checkout@v5

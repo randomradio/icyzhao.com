@@ -1,0 +1,10 @@
+{
+  "name": "icyzhao-wechat-publisher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "health": "node bin/health.mjs",
+    "publish": "node bin/publish-wechat.mjs"
+  }
+}

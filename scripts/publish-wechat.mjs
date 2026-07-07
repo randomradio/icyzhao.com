@@ -1,11 +1,110 @@
 #!/usr/bin/env node
 import { loadContentEntries, isPublishable, normalizeChannels } from "./lib/content.mjs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import os from "node:os";
+import path from "node:path";
+import MarkdownIt from "markdown-it";
 
 const entries = (await loadContentEntries()).filter(isPublishable);
 const requested = entries.filter((entry) => normalizeChannels(entry.data.channels).includes("wechat_mp"));
+const markdown = new MarkdownIt({ html: false, linkify: true, typographer: true });
 
 if (requested.length === 0) {
   console.log("Skipping WeChat Official Account: no publishable content requested wechat_mp.");
+  process.exit(0);
+}
+
+function absoluteUrl(url) {
+  const baseUrl = process.env.SITE_BASE_URL || "https://icyzhao.com";
+  return new URL(url, baseUrl).toString();
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function hasSshPublisherConfig() {
+  return Boolean(
+    process.env.WECHAT_PUBLISHER_HOST &&
+      process.env.WECHAT_PUBLISHER_SSH_KEY,
+  );
+}
+
+function entryToPayload(entry) {
+  return {
+    slug: entry.data.slug,
+    title: entry.data.title,
+    digest: entry.data.summary || "",
+    source_url: absoluteUrl(entry.url),
+    publish: entry.data.wechat_mp?.publish === true,
+    content_html: markdown.render(entry.body),
+    content_markdown: entry.body,
+    relative_path: entry.relativePath,
+  };
+}
+
+function run(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, options);
+    let stdout = "";
+    let stderr = "";
+
+    if (options.input !== undefined) {
+      child.stdin?.end(options.input);
+    }
+    child.stdout?.on("data", (chunk) => {
+      stdout += chunk;
+      process.stdout.write(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk;
+      process.stderr.write(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        reject(new Error(`${command} exited with code ${code}`));
+      }
+    });
+  });
+}
+
+async function publishViaSsh() {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "wechat-publisher-"));
+  const keyPath = path.join(tempDir, "ssh_key");
+  const user = process.env.WECHAT_PUBLISHER_USER || "ubuntu";
+  const host = process.env.WECHAT_PUBLISHER_HOST;
+  const port = process.env.WECHAT_PUBLISHER_PORT || "22";
+  const remotePath = process.env.WECHAT_PUBLISHER_PATH || "/home/ubuntu/icyzhao-wechat-publisher";
+  const payload = JSON.stringify({ items: requested.map(entryToPayload) });
+
+  try {
+    await writeFile(keyPath, `${process.env.WECHAT_PUBLISHER_SSH_KEY.trim()}\n`, { mode: 0o600 });
+    await run("ssh", [
+      "-i",
+      keyPath,
+      "-p",
+      port,
+      "-o",
+      "BatchMode=yes",
+      "-o",
+      "StrictHostKeyChecking=accept-new",
+      `${user}@${host}`,
+      `cd ${shellQuote(remotePath)} && node bin/publish-wechat.mjs`,
+    ], {
+      input: payload,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+if (hasSshPublisherConfig()) {
+  await publishViaSsh();
   process.exit(0);
 }
 
@@ -32,4 +131,3 @@ if (failures > 0) {
 }
 
 console.log(`WeChat channel check completed (${requested.length} requested item${requested.length === 1 ? "" : "s"}).`);
-
