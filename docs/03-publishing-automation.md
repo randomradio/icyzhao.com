@@ -10,42 +10,72 @@ Notion
   -> Markdown in Git
   -> CI build
   -> static host
+  -> optional channel publishers
 ```
 
 Hugo is the lowest-risk first choice because the current live site already uses Hugo/PaperMod. Astro is a good later option if the homepage and project pages need more custom interaction.
 
 ## Environment Variables
 
-Future automation should use these names:
+Automation uses these names:
 
 ```text
 NOTION_TOKEN=
 NOTION_DATABASE_ID=
+NOTION_VERSION=2022-06-28
 CLOUDFLARE_API_TOKEN=
 CLOUDFLARE_ZONE_ID=
 SITE_BASE_URL=https://icyzhao.com
+SITE_CUSTOM_DOMAIN=icyzhao.com
+SITE_TITLE=Chenyang Zhao
+SITE_DESCRIPTION=Writing, projects, and notes.
+WECHAT_MP_APP_ID=
+WECHAT_MP_APP_SECRET=
 ```
 
-## Commands To Add Later
+## Commands
 
 ```text
 npm run import:notion
 npm run discover:subdomains
+npm run validate:content
 npm run build
+npm run publish:wechat
 npm run publish
 ```
 
-`publish` should run the importer and subdomain discovery before the static build.
+`publish` should run the importer and subdomain discovery before the static build. Channel publishers should run after the site URL exists, because they may need canonical links.
 
 ## CI Flow
 
-On push to the main branch:
+The GitHub Actions workflow in `.github/workflows/publish.yml` runs on pushes to `main`, manual dispatch, and a scheduled pull.
 
 1. Install dependencies.
 2. Import `Ready` Notion pages if secrets are available.
-3. Discover subdomains if Cloudflare secrets are available.
-4. Build the static site.
-5. Deploy to the chosen host.
+3. Commit generated Notion Markdown back to `content/notion/` when it changed.
+4. Discover subdomains if Cloudflare secrets are available.
+5. Validate front matter, URL collisions, and requested channels.
+6. Build the static site.
+7. Deploy to GitHub Pages.
+8. Check optional channels only when explicitly requested by content metadata.
+
+## Optional WeChat Official Account Flow
+
+The WeChat Official Account should not be part of every publish. It is a channel adapter that runs only when the content asks for it.
+
+Recommended behavior:
+
+- Default channel list is `site`.
+- `wechat_mp` must be explicitly present in Notion `Channels` or repo front matter.
+- The workflow creates a WeChat draft unless a separate publish gate is true.
+- The workflow records the WeChat URL or draft result back to Notion or Git metadata.
+- If WeChat publishing fails, the main site deployment should remain successful and the channel failure should be reported separately.
+
+Current implementation status:
+
+- Channel gating is implemented.
+- Missing WeChat credentials are reported clearly.
+- The real WeChat API adapter is intentionally not implemented until credentials and account behavior are verified.
 
 ## Guardrails
 
@@ -53,4 +83,4 @@ On push to the main branch:
 - The importer should not overwrite locally edited Markdown unless the front matter says it is generated.
 - Generated files should include source IDs, timestamps, and stable slugs.
 - Publishing should fail loudly if two pages resolve to the same URL.
-
+- Optional channel publishing should be opt-in and idempotent.

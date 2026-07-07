@@ -20,6 +20,12 @@ Verification:
 - Homepage renders recent posts.
 - Existing public URLs can be preserved or redirected.
 
+Initial implementation:
+
+- `npm run publish` builds a static site into `public/`.
+- Publishable Markdown is read from `content/ideas/` and `content/notion/`.
+- GitHub Actions can deploy the generated site to GitHub Pages.
+
 ## Phase 2 - Content Loop
 
 Goal: publish from either Notion or local Markdown.
@@ -49,4 +55,3 @@ Verification:
 - CI builds the site.
 - CI deploys the site.
 - The live homepage shows latest content and domain navigation.
-

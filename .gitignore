@@ -4,16 +4,19 @@
 /public/
 /resources/_gen/
 /.hugo_build.lock
+/data/subdomains.generated.json
+/reports/
 
 # Node tooling, if we add import/discovery scripts later
 /node_modules/
 /.env
 /.env.*
 !.env.example
+!/scripts/lib/
+!/scripts/lib/**
 
 # Build and cache directories
 /dist/
 /.cache/
 /.vercel/
 /.netlify/
-

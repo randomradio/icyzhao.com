@@ -1,0 +1,31 @@
+{
+  "name": "icyzhao.com",
+  "version": "1.0.0",
+  "description": "This repo is the future source of truth for `icyzhao.com`.",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "import:notion": "node scripts/import-notion.mjs",
+    "discover:subdomains": "node scripts/discover-subdomains.mjs",
+    "validate:content": "node scripts/validate-content.mjs",
+    "build": "node scripts/build-site.mjs",
+    "publish:wechat": "node scripts/publish-wechat.mjs",
+    "site:prepare": "npm run import:notion && npm run discover:subdomains && npm run validate:content",
+    "publish": "npm run site:prepare && npm run build",
+    "check": "npm run validate:content && npm run build",
+    "unit": "node --test scripts/**/*.test.mjs",
+    "test": "npm run unit && npm run check"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.3.0"
+  }
+}

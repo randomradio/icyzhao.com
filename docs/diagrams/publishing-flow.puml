@@ -1,0 +1,123 @@
+@startuml
+title icyzhao.com content publishing flow
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  FontColor #0F172A
+  DiamondBackgroundColor #FEF3C7
+  DiamondBorderColor #92400E
+}
+skinparam note {
+  BackgroundColor #EEF2FF
+  BorderColor #4F46E5
+}
+
+start
+
+partition "Author responsibility" {
+  :Write or edit content only;
+  note right
+    Author surfaces:
+    - Notion database
+    - Git repository
+
+    Everything after content change
+    should be automated by workflows.
+  end note
+}
+
+if (Where does the change start?) then (Notion)
+  partition "Author in Notion" {
+    :Capture idea in Notion;
+    :Draft, edit, tag, and choose channels;
+    :Set Status = Ready;
+  }
+
+  partition "GitHub workflow" {
+    :Trigger import workflow;
+    note right
+      Trigger options:
+      - manual workflow_dispatch
+      - scheduled pull
+      - Notion/webhook bridge later
+    end note
+    :Fetch Ready pages from Notion API;
+    :Convert pages to Markdown + front matter;
+    :Write generated files under content/notion/;
+    :Commit generated content or open PR;
+  }
+else (GitHub)
+  partition "Author in Git" {
+    :Create or edit Markdown locally;
+    :Set front matter channels;
+    :Commit content change;
+    :Push to GitHub;
+  }
+endif
+
+partition "Repository checks" {
+  :Validate front matter;
+  :Check duplicate slugs and URL collisions;
+  :Resolve requested publish channels;
+  :Check generated files are reproducible;
+
+  if (Content valid?) then (yes)
+  else (no)
+    :Fail workflow with actionable errors;
+    stop
+  endif
+}
+
+partition "Navigation automation" {
+  :Fetch DNS records from Cloudflare;
+  :Merge with data/subdomains.registry.json;
+  :Generate data/subdomains.generated.json;
+}
+
+partition "Static site build" {
+  :Build site from Markdown and data files;
+  :Generate homepage, feeds, sitemap, and domain map;
+
+  if (Build succeeds?) then (yes)
+  else (no)
+    :Fail workflow and keep live site unchanged;
+    stop
+  endif
+}
+
+partition "Deployment" {
+  :Deploy static output to hosting provider;
+  :Publish updated icyzhao.com;
+}
+
+partition "Optional channel publishing" {
+  if (wechat_mp channel requested?) then (yes)
+    :Render WeChat-compatible article;
+    :Upload required media assets;
+
+    if (WeChat publish gate passed?) then (yes)
+      :Publish or schedule to WeChat Official Account;
+      :Record WeChat article URL or publish result;
+    else (no)
+      :Create WeChat draft only;
+      :Record draft status for review;
+    endif
+  else (no)
+    :Skip WeChat Official Account;
+  endif
+}
+
+partition "Post-publish sync" {
+  if (Source was Notion?) then (yes)
+    :Set Notion Status = Published;
+    :Write Canonical URL, Published At, and channel results;
+  else (no)
+    :Commit or persist channel results if needed;
+  endif
+}
+
+stop
+@enduml

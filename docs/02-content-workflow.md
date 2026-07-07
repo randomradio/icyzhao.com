@@ -24,7 +24,10 @@ Recommended properties:
 | Published At | Date | Set when published |
 | Updated At | Date | Optional |
 | Visibility | Select | `public`, `unlisted`, `private` |
+| Channels | Multi-select | Default `site`; add `wechat_mp` only when the piece should go to the official account |
+| WeChat Publish | Checkbox | Optional extra gate before sending to the official account |
 | Canonical URL | URL | Filled after publish |
+| WeChat URL | URL | Filled only when published to the official account |
 
 ## Status Flow
 
@@ -57,10 +60,31 @@ content/ideas/YYYY-MM-DD-slug.md
   -> deploy
 ```
 
+## Channels
+
+The main site is the default channel. Other channels are opt-in per piece.
+
+Recommended initial channels:
+
+| Channel | Meaning | Default |
+| --- | --- | --- |
+| `site` | Publish to `icyzhao.com` | Yes |
+| `wechat_mp` | Publish to a WeChat Official Account | No |
+
+For Notion content, use the `Channels` property. For repo content, use front matter:
+
+```yaml
+channels:
+  - site
+wechat_mp:
+  publish: false
+```
+
+The WeChat channel should be conservative: create a draft by default, and only publish when the content explicitly opts in.
+
 ## Editorial Rules
 
 - A note can be small. It only needs one clear idea.
 - Slugs should not change after publishing.
 - Tags are for retrieval, not decoration.
 - If a piece needs more than one afternoon of shaping, it is probably an essay rather than a note.
-

@@ -26,7 +26,22 @@ The live site is currently a lightweight Hugo/PaperMod blog. This repository sta
 - [Content Workflow](docs/02-content-workflow.md)
 - [Publishing Automation](docs/03-publishing-automation.md)
 - [Subdomain Navigation](docs/04-subdomain-navigation.md)
+- [Publishing Flow Diagram](docs/diagrams/publishing-flow.puml)
 - [Roadmap](docs/05-roadmap.md)
+
+## Commands
+
+```bash
+npm run publish
+```
+
+This imports Notion content when credentials exist, discovers subdomains when Cloudflare credentials exist, validates content, and builds `public/`.
+
+```bash
+npm run publish:wechat
+```
+
+This checks the optional WeChat Official Account channel. It only runs for publishable content that explicitly includes `wechat_mp`.
 
 ## Initial Repository Shape
 
@@ -42,4 +57,3 @@ docs/
 scripts/
   future import and discovery scripts
 ```
-
