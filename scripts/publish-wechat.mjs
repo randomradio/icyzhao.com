@@ -38,6 +38,8 @@ function entryToPayload(entry) {
     digest: entry.data.summary || "",
     source_url: absoluteUrl(entry.url),
     publish: entry.data.wechat_mp?.publish === true,
+    cover_url: entry.data.wechat_mp?.cover_url || entry.data.cover_url || null,
+    thumb_media_id: entry.data.wechat_mp?.thumb_media_id || null,
     content_html: markdown.render(entry.body),
     content_markdown: entry.body,
     relative_path: entry.relativePath,

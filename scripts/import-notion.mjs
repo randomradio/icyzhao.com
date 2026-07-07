@@ -78,6 +78,13 @@ function richTextToMarkdown(richText = []) {
     .join("");
 }
 
+function fileObjectUrl(fileObject) {
+  if (!fileObject) return undefined;
+  if (fileObject.type === "external") return fileObject.external?.url;
+  if (fileObject.type === "file") return fileObject.file?.url;
+  return undefined;
+}
+
 async function queryReadyPages() {
   const pages = [];
   let startCursor;
@@ -149,6 +156,7 @@ async function pageToMarkdown(page) {
   const title = propertyValue(properties, "Title") || firstTitle(properties);
   const slug = propertyValue(properties, "Slug") || slugify(title);
   const channels = propertyValue(properties, "Channels") || ["site"];
+  const wechatCoverUrl = propertyValue(properties, "WeChat Cover URL") || fileObjectUrl(page.cover);
   const blocks = await listBlockChildren(page.id);
   const bodyParts = await Promise.all(blocks.map((block) => blockToMarkdown(block)));
   const body = bodyParts.filter(Boolean).join("\n\n");
@@ -167,6 +175,8 @@ async function pageToMarkdown(page) {
       channels,
       wechat_mp: {
         publish: Boolean(propertyValue(properties, "WeChat Publish")),
+        cover_url: wechatCoverUrl || null,
+        thumb_media_id: propertyValue(properties, "WeChat Thumb Media ID") || null,
       },
       visibility: propertyValue(properties, "Visibility") || "public",
       published_at: propertyValue(properties, "Published At") || null,

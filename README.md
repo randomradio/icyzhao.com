@@ -60,6 +60,8 @@ Set `Channels` to `site` for normal site publishing. Add `wechat_mp` and set `We
 
 WeChat publishing is routed through a fixed-IP SSH publisher at `/home/ubuntu/icyzhao-wechat-publisher` on the publishing server. GitHub Actions uses `WECHAT_PUBLISHER_*` secrets to run that remote CLI, so official-account API calls originate from the server IP instead of GitHub-hosted runner IPs.
 
+WeChat covers are automatic. The publisher uses `WeChat Cover URL` or the Notion page cover when present, uploads it as a permanent image material, and caches the returned media id. If a piece has no cover, the publisher generates a deterministic fallback cover. `WeChat Thumb Media ID` is only for rare manual overrides.
+
 ## Initial Repository Shape
 
 ```text
