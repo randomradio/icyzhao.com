@@ -44,7 +44,7 @@ This checks the optional WeChat Official Account channel. It only runs for publi
 
 ## Notion Publishing
 
-Publishing database: [Publishing Queue](https://app.notion.com/p/3963f5fd592c81b79d6acbce33a702cc)
+Publishing database: [Articles](https://app.notion.com/p/3963f5fd592c81b79d6acbce33a702cc)
 
 The GitHub Actions workflow imports Notion rows where `Status` is `Ready`. Required fields are:
 
