@@ -11,6 +11,7 @@
 /node_modules/
 /.env
 /.env.*
+/.secret
 !.env.example
 !/scripts/lib/
 !/scripts/lib/**
