@@ -139,6 +139,31 @@ ${html}
   }));
 }
 
+function redirectPage(targetUrl) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(targetUrl)}">
+    <link rel="canonical" href="${escapeHtml(absoluteUrl(targetUrl))}">
+    <title>Redirecting | ${escapeHtml(SITE_TITLE)}</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href="${escapeHtml(targetUrl)}">${escapeHtml(targetUrl)}</a>.</p>
+  </body>
+</html>
+`;
+}
+
+async function writeLegacyRedirects(entry) {
+  const legacyUrls = Array.isArray(entry.data.legacy_urls) ? entry.data.legacy_urls : [];
+  for (const legacyUrl of legacyUrls) {
+    if (typeof legacyUrl !== "string" || !legacyUrl.startsWith("/")) continue;
+    const outputPath = path.join(legacyUrl.replace(/^\/|\/$/g, ""), "index.html");
+    await writePage(outputPath, redirectPage(entry.url));
+  }
+}
+
 async function writeIndex(entries, subdomains) {
   const recent = sortEntries(entries).slice(0, 8);
   const grouped = groupEntriesByType(entries);
@@ -450,7 +475,10 @@ await writeCollectionPage({
   emptyText: "No published projects yet.",
 });
 
-for (const entry of entries) await writeContentPage(entry);
+for (const entry of entries) {
+  await writeContentPage(entry);
+  await writeLegacyRedirects(entry);
+}
 
 await writePage("feed.xml", feedXml(entries));
 await writePage("sitemap.xml", sitemapXml(entries));
