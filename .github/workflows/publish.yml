@@ -84,6 +84,20 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v5
 
+      - name: Enforce HTTPS when certificate is ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api repos/${{ github.repository }}/pages \
+            -X PUT \
+            -f cname=icyzhao.com \
+            -f build_type=workflow \
+            -F https_enforced=true; then
+            echo "HTTPS enforcement enabled."
+          else
+            echo "GitHub Pages certificate is not ready yet; HTTPS enforcement will be retried on the next publish."
+          fi
+
   wechat:
     runs-on: ubuntu-latest
     needs: deploy
