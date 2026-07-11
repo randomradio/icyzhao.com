@@ -34,7 +34,7 @@ The live site is published by GitHub Pages from this repository. Content can be 
 npm run publish
 ```
 
-This imports Notion content when credentials exist, discovers subdomains when Cloudflare credentials exist, validates content, and builds `public/`.
+This imports Notion content when credentials exist, validates content, enriches project pages with GitHub release metadata, discovers subdomains when Cloudflare credentials exist, and builds `public/`.
 
 ```bash
 npm run publish:wechat
@@ -44,7 +44,7 @@ This checks the optional WeChat Official Account channel. It only runs for publi
 
 ## Notion Publishing
 
-Publishing database: [Articles](https://app.notion.com/p/3963f5fd592c81b79d6acbce33a702cc)
+Project publishing database: [Project Publishing](https://app.notion.com/p/cc7de304fd5249ca992624301408538c)
 
 The GitHub Actions workflow imports Notion rows where `Status` is `Ready`. Required fields are:
 
@@ -56,7 +56,20 @@ The GitHub Actions workflow imports Notion rows where `Status` is `Ready`. Requi
 - `Channels`
 - `Visibility`
 
+For project pages, add:
+
+- `Repo URL`
+- `Project URL` (optional)
+
 Set `Channels` to `site` for normal site publishing. Add `wechat_mp` and set `WeChat Publish` to checked only when the optional WeChat channel should run.
+
+## Project Publishing
+
+To publish a tool, add a Notion row with `Type` set to `project`, `Status` set to `Ready`, `Visibility` set to `public`, and `Channels` containing `site`.
+
+The project table can live in its own Notion database. Set `NOTION_PROJECTS_DATABASE_ID` to that database ID, or put all content database IDs in `NOTION_DATABASE_IDS` as a comma-separated list.
+
+If `Repo URL` points to a GitHub repository, the site publish workflow automatically pulls the repository description, latest GitHub Release, release notes, release URL, and downloadable assets into the project page. For private repositories, set a `PROJECTS_GITHUB_TOKEN` secret with read access to those repos.
 
 WeChat publishing is routed through a fixed-IP SSH publisher at `/home/ubuntu/icyzhao-wechat-publisher` on the publishing server. GitHub Actions uses `WECHAT_PUBLISHER_*` secrets to run that remote CLI, so official-account API calls originate from the server IP instead of GitHub-hosted runner IPs.
 

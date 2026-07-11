@@ -10,11 +10,12 @@
   },
   "scripts": {
     "import:notion": "node scripts/import-notion.mjs",
+    "sync:projects": "node scripts/sync-project-releases.mjs",
     "discover:subdomains": "node scripts/discover-subdomains.mjs",
     "validate:content": "node scripts/validate-content.mjs",
     "build": "node scripts/build-site.mjs",
     "publish:wechat": "node scripts/publish-wechat.mjs",
-    "site:prepare": "npm run import:notion && npm run discover:subdomains && npm run validate:content",
+    "site:prepare": "npm run import:notion && npm run validate:content && npm run sync:projects && npm run discover:subdomains",
     "publish": "npm run site:prepare && npm run build",
     "check": "npm run validate:content && npm run build",
     "unit": "node --test scripts/**/*.test.mjs",

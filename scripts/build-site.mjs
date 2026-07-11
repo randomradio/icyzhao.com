@@ -10,6 +10,7 @@ import {
   urlForContent,
 } from "./lib/content.mjs";
 import { readJsonIfExists } from "./lib/files.mjs";
+import { projectDataBySlug } from "./lib/projects.mjs";
 
 const PUBLIC_DIR = "public";
 const SITE_BASE_URL = process.env.SITE_BASE_URL || "https://icyzhao.com";
@@ -65,19 +66,77 @@ ${body}
 `;
 }
 
-function dateText(entry) {
-  const value = entry.data.published_at || entry.data.updated_at;
+function formatDate(value) {
   if (!value) return "";
   return new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).format(new Date(value));
 }
 
+function dateText(entry) {
+  return formatDate(entry.data.published_at || entry.data.updated_at);
+}
+
+function sortDateValue(entry) {
+  return entry.data.type === "project"
+    ? entry.project?.latest_release?.published_at || entry.data.published_at || entry.data.updated_at
+    : entry.data.published_at || entry.data.updated_at;
+}
+
+function projectUrl(entry) {
+  return entry.data.project_url || entry.project?.project_url || entry.project?.repo?.homepage || "";
+}
+
+function repoUrl(entry) {
+  return entry.project?.repo?.html_url || entry.data.repo_url || "";
+}
+
+function latestVersionLink(entry) {
+  if (entry.project?.latest_release?.html_url) return ["Latest release", entry.project.latest_release.html_url];
+  if (entry.project?.latest_tag?.html_url) return ["Latest tag", entry.project.latest_tag.html_url];
+  return ["", ""];
+}
+
+function projectLinks(entry) {
+  if (entry.data.type !== "project") return "";
+
+  const latest = latestVersionLink(entry);
+  const links = [
+    ["Project", projectUrl(entry)],
+    ["Repo", repoUrl(entry)],
+    latest,
+  ].filter(([, href], index, values) => {
+    if (!href) return false;
+    return values.findIndex(([, earlierHref]) => earlierHref === href) === index;
+  });
+
+  if (links.length === 0) return "";
+  return `<div class="project-links">
+    ${links.map(([label, href]) => `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`).join("\n    ")}
+  </div>`;
+}
+
+function projectReleaseLine(entry) {
+  const release = entry.project?.latest_release;
+  if (!release) {
+    const tag = entry.project?.latest_tag;
+    if (!tag) return "";
+    return `<p class="project-release">Latest tag: <a href="${escapeHtml(tag.html_url)}">${escapeHtml(tag.name)}</a></p>`;
+  }
+
+  const published = formatDate(release.published_at);
+  const date = published ? ` · ${escapeHtml(published)}` : "";
+  return `<p class="project-release">Latest: <a href="${escapeHtml(release.html_url)}">${escapeHtml(release.tag_name)}</a>${date}</p>`;
+}
+
 function entryCard(entry) {
-  const summary = entry.data.summary ? `<p>${escapeHtml(entry.data.summary)}</p>` : "";
+  const summaryText = entry.data.summary || (entry.data.type === "project" ? entry.project?.repo?.description : "");
+  const summary = summaryText ? `<p>${escapeHtml(summaryText)}</p>` : "";
   const date = dateText(entry);
   const meta = date ? `<time datetime="${escapeHtml(entry.data.published_at || entry.data.updated_at)}">${escapeHtml(date)}</time>` : "";
   return `<article class="entry">
   <h3><a href="${escapeHtml(entry.url)}">${escapeHtml(entry.data.title)}</a></h3>
   ${summary}
+  ${projectReleaseLine(entry)}
+  ${projectLinks(entry)}
   ${meta}
 </article>`;
 }
@@ -89,8 +148,8 @@ function entriesList(entries, emptyText) {
 
 function sortEntries(entries) {
   return [...entries].sort((a, b) => {
-    const aDate = new Date(a.data.published_at || a.data.updated_at || 0).getTime();
-    const bDate = new Date(b.data.published_at || b.data.updated_at || 0).getTime();
+    const aDate = new Date(sortDateValue(a) || 0).getTime();
+    const bDate = new Date(sortDateValue(b) || 0).getTime();
     return bDate - aDate || a.data.title.localeCompare(b.data.title);
   });
 }
@@ -124,7 +183,9 @@ async function writeContentPage(entry) {
           <p class="eyebrow">${escapeHtml(entry.data.type)}</p>
           <h1>${escapeHtml(entry.data.title)}</h1>
           ${entry.data.summary ? `<p class="summary">${escapeHtml(entry.data.summary)}</p>` : ""}
+          ${projectLinks(entry)}
         </header>
+        ${projectDetails(entry)}
         <div class="prose">
 ${html}
         </div>
@@ -137,6 +198,31 @@ ${html}
     language: entry.data.language || "en",
     canonicalPath: entry.url,
   }));
+}
+
+function projectDetails(entry) {
+  if (entry.data.type !== "project") return "";
+
+  const release = entry.project?.latest_release;
+  const repoDescription = entry.project?.repo?.description;
+  const releaseNotes = release?.body ? markdown.render(release.body) : "";
+  const assets = release?.assets?.filter((asset) => asset.url) || [];
+
+  if (!release && !repoDescription) return "";
+
+  return `<section class="project-meta">
+          ${repoDescription && !entry.data.summary ? `<p>${escapeHtml(repoDescription)}</p>` : ""}
+          ${release ? `<div class="project-latest">
+            <h2>Latest release</h2>
+            <p><a href="${escapeHtml(release.html_url)}">${escapeHtml(release.name || release.tag_name)}</a>${release.published_at ? ` · ${escapeHtml(formatDate(release.published_at))}` : ""}</p>
+            ${assets.length > 0 ? `<ul class="release-assets">
+              ${assets.map((asset) => `<li><a href="${escapeHtml(asset.url)}">${escapeHtml(asset.name)}</a></li>`).join("\n              ")}
+            </ul>` : ""}
+            ${releaseNotes ? `<div class="release-notes">
+${releaseNotes}
+            </div>` : ""}
+          </div>` : ""}
+        </section>`;
 }
 
 function redirectPage(targetUrl) {
@@ -374,6 +460,40 @@ h3 {
   margin-bottom: 8px;
 }
 
+.project-release {
+  margin-bottom: 8px;
+}
+
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 12px 0 8px;
+}
+
+.project-meta {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.project-meta h2 {
+  margin-bottom: 8px;
+}
+
+.release-assets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+
+.release-notes {
+  margin-top: 24px;
+}
+
 time,
 .muted {
   color: var(--muted);
@@ -440,6 +560,9 @@ time,
 `);
 }
 
+const subdomains = await readJsonIfExists("data/subdomains.generated.json", { entries: [] });
+const projects = await readJsonIfExists("data/projects.generated.json", { entries: [] });
+const projectsBySlug = projectDataBySlug(projects);
 const allEntries = await loadContentEntries();
 const entries = allEntries
   .filter(isPublishable)
@@ -447,8 +570,8 @@ const entries = allEntries
   .map((entry) => ({
     ...entry,
     url: urlForContent(entry.data),
+    project: projectsBySlug.get(entry.data.slug),
   }));
-const subdomains = await readJsonIfExists("data/subdomains.generated.json", { entries: [] });
 const grouped = groupEntriesByType(entries);
 
 await fs.rm(PUBLIC_DIR, { recursive: true, force: true });
