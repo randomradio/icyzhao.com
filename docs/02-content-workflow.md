@@ -28,6 +28,8 @@ Recommended properties:
 | WeChat Publish | Checkbox | Optional extra gate before sending to the official account |
 | Canonical URL | URL | Filled after publish |
 | WeChat URL | URL | Filled only when published to the official account |
+| Repo URL | URL | Used by project pages to pull GitHub release metadata |
+| Project URL | URL | Optional live product or documentation URL for project pages |
 
 ## Status Flow
 
@@ -81,6 +83,22 @@ wechat_mp:
 ```
 
 The WeChat channel should be conservative: create a draft by default, and only publish when the content explicitly opts in.
+
+## Project Publishing
+
+Projects can use the same Notion database as notes and essays, or a separate Project Publishing database. When they live separately, set `NOTION_PROJECTS_DATABASE_ID` in the publish environment.
+
+Required project fields:
+
+| Property | Value |
+| --- | --- |
+| Type | `project` |
+| Status | `Ready` |
+| Visibility | `public` or `unlisted` |
+| Channels | `site` |
+| Repo URL | GitHub repository URL |
+
+When a project has a GitHub `Repo URL`, the site publish workflow generates `data/projects.generated.json` with the repository description, latest release, release notes, release URL, and downloadable assets. The generated file is not committed; it is rebuilt during publishing.
 
 ## Editorial Rules
 

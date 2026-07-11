@@ -25,8 +25,12 @@ jobs:
       SITE_CUSTOM_DOMAIN: icyzhao.com
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+      NOTION_PROJECTS_DATABASE_ID: ${{ secrets.NOTION_PROJECTS_DATABASE_ID }}
+      NOTION_DATABASE_IDS: ${{ secrets.NOTION_DATABASE_IDS }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      PROJECTS_GITHUB_TOKEN: ${{ secrets.PROJECTS_GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -58,6 +62,9 @@ jobs:
           else
             echo "No imported Notion content changes."
           fi
+
+      - name: Sync project releases
+        run: npm run sync:projects
 
       - name: Discover subdomains
         run: npm run discover:subdomains

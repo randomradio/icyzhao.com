@@ -5,6 +5,7 @@
 /resources/_gen/
 /.hugo_build.lock
 /data/subdomains.generated.json
+/data/projects.generated.json
 /reports/
 
 # Node tooling, if we add import/discovery scripts later

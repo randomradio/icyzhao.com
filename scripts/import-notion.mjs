@@ -5,12 +5,25 @@ import matter from "gray-matter";
 import { pathExists } from "./lib/files.mjs";
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
-const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2022-06-28";
 const OUTPUT_DIR = "content/notion";
 
-if (!NOTION_TOKEN || !NOTION_DATABASE_ID) {
-  console.log("Skipping Notion import: NOTION_TOKEN or NOTION_DATABASE_ID is not set.");
+function splitDatabaseIds(value = "") {
+  return value
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+const NOTION_DATABASE_IDS = [
+  process.env.NOTION_DATABASE_ID,
+  process.env.NOTION_PROJECTS_DATABASE_ID,
+  ...splitDatabaseIds(process.env.NOTION_DATABASE_IDS),
+].filter(Boolean);
+const uniqueNotionDatabaseIds = [...new Set(NOTION_DATABASE_IDS)];
+
+if (!NOTION_TOKEN || uniqueNotionDatabaseIds.length === 0) {
+  console.log("Skipping Notion import: NOTION_TOKEN or Notion database ID env vars are not set.");
   process.exit(0);
 }
 
@@ -85,12 +98,12 @@ function fileObjectUrl(fileObject) {
   return undefined;
 }
 
-async function queryReadyPages() {
+async function queryReadyPages(databaseId) {
   const pages = [];
   let startCursor;
 
   do {
-    const payload = await notionRequest(`/databases/${NOTION_DATABASE_ID}/query`, {
+    const payload = await notionRequest(`/databases/${databaseId}/query`, {
       method: "POST",
       body: JSON.stringify({
         page_size: 50,
@@ -102,7 +115,9 @@ async function queryReadyPages() {
     startCursor = payload.has_more ? payload.next_cursor : undefined;
   } while (startCursor);
 
-  return pages.filter((page) => propertyValue(page.properties, "Status") === "Ready");
+  return pages
+    .filter((page) => propertyValue(page.properties, "Status") === "Ready")
+    .map((page) => ({ ...page, source_database_id: databaseId }));
 }
 
 async function listBlockChildren(blockId) {
@@ -156,18 +171,25 @@ async function pageToMarkdown(page) {
   const title = propertyValue(properties, "Title") || firstTitle(properties);
   const slug = propertyValue(properties, "Slug") || slugify(title);
   const channels = propertyValue(properties, "Channels") || ["site"];
+  const type = String(propertyValue(properties, "Type") || "note").toLowerCase();
   const wechatCoverUrl = propertyValue(properties, "WeChat Cover URL") || fileObjectUrl(page.cover);
   const blocks = await listBlockChildren(page.id);
   const bodyParts = await Promise.all(blocks.map((block) => blockToMarkdown(block)));
   const body = bodyParts.filter(Boolean).join("\n\n");
   const tags = propertyValue(properties, "Tags") || [];
+  const projectFields = type === "project"
+    ? {
+        project_url: propertyValue(properties, "Project URL") || null,
+        repo_url: propertyValue(properties, "Repo URL") || propertyValue(properties, "Repository URL") || null,
+      }
+    : {};
 
   return {
     slug,
     frontMatter: {
       title,
       slug,
-      type: String(propertyValue(properties, "Type") || "note").toLowerCase(),
+      type,
       language: propertyValue(properties, "Language") || "en",
       status: "ready",
       summary: propertyValue(properties, "Summary") || "",
@@ -182,8 +204,10 @@ async function pageToMarkdown(page) {
       published_at: propertyValue(properties, "Published At") || null,
       updated_at: propertyValue(properties, "Updated At") || page.last_edited_time,
       source: "notion",
+      ...projectFields,
       notion: {
         page_id: page.id,
+        database_id: page.source_database_id,
         last_edited_time: page.last_edited_time,
       },
     },
@@ -200,7 +224,11 @@ async function assertSafeWrite(filePath, pageId) {
 }
 
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
-const pages = await queryReadyPages();
+const pages = [];
+
+for (const databaseId of uniqueNotionDatabaseIds) {
+  pages.push(...(await queryReadyPages(databaseId)));
+}
 
 for (const page of pages) {
   const converted = await pageToMarkdown(page);
@@ -209,4 +237,6 @@ for (const page of pages) {
   await fs.writeFile(filePath, matter.stringify(`${converted.body}\n`, converted.frontMatter));
 }
 
-console.log(`Imported ${pages.length} Ready Notion page${pages.length === 1 ? "" : "s"}.`);
+console.log(
+  `Imported ${pages.length} Ready Notion page${pages.length === 1 ? "" : "s"} from ${uniqueNotionDatabaseIds.length} database${uniqueNotionDatabaseIds.length === 1 ? "" : "s"}.`,
+);
